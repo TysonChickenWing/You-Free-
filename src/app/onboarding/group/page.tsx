@@ -16,6 +16,7 @@ export default function CreateOrJoinGroup() {
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [type, setType] = useState<GroupType>('family_group');
   const [name, setName] = useState('');
+  const [customCode, setCustomCode] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +32,12 @@ export default function CreateOrJoinGroup() {
   async function handleCreate() {
     setError(null);
     try {
-      await createGroup.mutateAsync({ name: name.trim(), type, familyId: selectedFamilyId });
+      await createGroup.mutateAsync({
+        name: name.trim(),
+        type,
+        familyId: selectedFamilyId,
+        inviteCode: customCode.trim() || undefined,
+      });
       router.replace('/');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
@@ -99,6 +105,13 @@ export default function CreateOrJoinGroup() {
             placeholder={type === 'golf_group' ? 'Saturday Golf Crew' : 'The Neighborhood Crew'}
             value={name}
             onChange={(e) => setName(e.target.value)}
+          />
+          <TextField
+            label="Invite code (optional)"
+            placeholder="Leave blank to get a random one"
+            value={customCode}
+            onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
+            maxLength={20}
           />
           {error ? <Body>{error}</Body> : null}
           <Button label="Create group" onClick={handleCreate} loading={loading} disabled={!name.trim()} />

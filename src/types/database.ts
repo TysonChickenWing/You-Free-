@@ -55,6 +55,7 @@ export interface Database {
         Insert: {
           id?: string;
           name: string;
+          invite_code?: string;
           created_by: string;
         };
         Update: {
@@ -92,6 +93,7 @@ export interface Database {
           id?: string;
           name: string;
           type: GroupType;
+          invite_code?: string;
           created_by: string;
         };
         Update: {

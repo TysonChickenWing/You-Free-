@@ -45,18 +45,28 @@ export function useCreateGroup() {
       name,
       type,
       familyId,
+      inviteCode,
     }: {
       name: string;
       type: GroupType;
       familyId?: string;
+      inviteCode?: string;
     }) => {
       if (!session?.user) throw new Error('Not signed in');
       const { data: group, error } = await supabase
         .from('groups')
-        .insert({ name, type, created_by: session.user.id })
+        .insert({
+          name,
+          type,
+          created_by: session.user.id,
+          ...(inviteCode ? { invite_code: inviteCode.trim().toUpperCase() } : {}),
+        })
         .select('*')
         .single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') throw new Error('That invite code is already taken — try another.');
+        throw error;
+      }
 
       const { error: memberError } = await supabase.from('group_members').insert({
         group_id: group.id,

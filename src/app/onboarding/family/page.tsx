@@ -13,6 +13,7 @@ export default function CreateOrJoinFamily() {
   const router = useRouter();
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [name, setName] = useState('');
+  const [customCode, setCustomCode] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +24,7 @@ export default function CreateOrJoinFamily() {
   async function handleCreate() {
     setError(null);
     try {
-      await createFamily.mutateAsync(name.trim());
+      await createFamily.mutateAsync({ name: name.trim(), inviteCode: customCode.trim() || undefined });
       router.replace('/onboarding/group');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
@@ -53,6 +54,13 @@ export default function CreateOrJoinFamily() {
       {mode === 'create' ? (
         <div className="flex flex-col gap-3">
           <TextField label="Family name" placeholder="The Smiths" value={name} onChange={(e) => setName(e.target.value)} />
+          <TextField
+            label="Invite code (optional)"
+            placeholder="Leave blank to get a random one"
+            value={customCode}
+            onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
+            maxLength={20}
+          />
           {error ? <Body>{error}</Body> : null}
           <Button label="Create family" onClick={handleCreate} loading={loading} disabled={!name.trim()} />
         </div>
