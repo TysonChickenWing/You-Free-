@@ -107,3 +107,23 @@ export function useJoinGroup() {
     },
   });
 }
+
+export function useLeaveGroup() {
+  const { session } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      if (!session?.user) throw new Error('Not signed in');
+      const { error } = await supabase
+        .from('group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('profile_id', session.user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-groups'] });
+    },
+  });
+}

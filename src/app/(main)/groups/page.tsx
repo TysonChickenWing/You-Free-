@@ -5,16 +5,22 @@ import type { ReactNode } from 'react';
 
 import { Body, Caption, Heading, Subheading } from '../../../components/ui';
 import { useMyFamilies } from '../../../hooks/useFamilies';
-import { useMyGroups } from '../../../hooks/useGroups';
+import { useLeaveGroup, useMyGroups } from '../../../hooks/useGroups';
 
 export default function GroupsPage() {
   const familiesQuery = useMyFamilies();
   const groupsQuery = useMyGroups();
+  const leaveGroup = useLeaveGroup();
 
   const families = familiesQuery.data ?? [];
   const groups = groupsQuery.data ?? [];
   const familyGroups = groups.filter((g) => g.group.type === 'family_group');
   const golfGroups = groups.filter((g) => g.group.type === 'golf_group');
+
+  function handleLeave(groupId: string, groupName: string) {
+    if (!confirm(`Leave "${groupName}"? You can rejoin later with its invite code.`)) return;
+    leaveGroup.mutate(groupId);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -24,7 +30,15 @@ export default function GroupsPage() {
         {familyGroups.length === 0 ? (
           <Body muted>You haven&rsquo;t joined a family group yet.</Body>
         ) : (
-          familyGroups.map(({ group }) => <GroupRow key={group.id} name={group.name} code={group.invite_code} id={group.id} />)
+          familyGroups.map(({ group }) => (
+            <GroupRow
+              key={group.id}
+              name={group.name}
+              code={group.invite_code}
+              id={group.id}
+              onLeave={() => handleLeave(group.id, group.name)}
+            />
+          ))
         )}
       </Section>
 
@@ -32,7 +46,15 @@ export default function GroupsPage() {
         {golfGroups.length === 0 ? (
           <Body muted>You haven&rsquo;t joined a golf group yet.</Body>
         ) : (
-          golfGroups.map(({ group }) => <GroupRow key={group.id} name={group.name} code={group.invite_code} id={group.id} />)
+          golfGroups.map(({ group }) => (
+            <GroupRow
+              key={group.id}
+              name={group.name}
+              code={group.invite_code}
+              id={group.id}
+              onLeave={() => handleLeave(group.id, group.name)}
+            />
+          ))
         )}
       </Section>
 
@@ -77,16 +99,30 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function GroupRow({ name, code, id }: { name: string; code: string; id: string }) {
+function GroupRow({
+  name,
+  code,
+  id,
+  onLeave,
+}: {
+  name: string;
+  code: string;
+  id: string;
+  onLeave: () => void;
+}) {
   return (
-    <Link
-      href={`/group/${id}`}
-      className="flex items-center justify-between rounded-lg border border-border bg-surface p-4 transition hover:opacity-90"
-    >
-      <div>
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
+      <Link href={`/group/${id}`} className="min-w-0 flex-1 hover:opacity-90">
         <Subheading>{name}</Subheading>
         <Caption>Invite code: {code}</Caption>
-      </div>
-    </Link>
+      </Link>
+      <button
+        type="button"
+        onClick={onLeave}
+        className="shrink-0 rounded-md border border-border px-3 py-2 text-[13px] font-semibold text-danger hover:bg-danger-muted"
+      >
+        Leave
+      </button>
+    </div>
   );
 }
