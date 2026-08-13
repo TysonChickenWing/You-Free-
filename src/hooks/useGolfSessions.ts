@@ -21,7 +21,7 @@ export interface GolfSessionWithParticipants {
   golf_session_participants: GolfSessionParticipantWithProfile[];
 }
 
-const todayIso = new Date().toISOString().slice(0, 10);
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function useGolfSessions(groupId?: string) {
   return useQuery({
@@ -34,7 +34,7 @@ export function useGolfSessions(groupId?: string) {
           'id, group_id, date, time_window, course, status, golf_session_participants(session_id, profile_id, status, profile:profiles(id, full_name))'
         )
         .eq('group_id', groupId!)
-        .gte('date', todayIso)
+        .gte('date', todayIso())
         .order('date', { ascending: true });
       if (error) throw error;
       return data as unknown as GolfSessionWithParticipants[];

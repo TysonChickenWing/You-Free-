@@ -1,12 +1,11 @@
-import { useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 
 import { useChatId, useChatMessages, useSendChatMessage } from '../hooks/useChat';
 import { useAuth } from '../providers/AuthProvider';
 import { useProfile } from '../hooks/useProfile';
 import type { ChatContextType, ChatMessage } from '../types/database';
-import { colors, radius, spacing } from '../theme/colors';
 import { Caption, TextField } from './ui';
 
 export function ChatThread({ contextType, contextId }: { contextType: ChatContextType; contextId?: string }) {
@@ -16,65 +15,56 @@ export function ChatThread({ contextType, contextId }: { contextType: ChatContex
   const sendMessage = useSendChatMessage(chatId);
   const { session } = useAuth();
   const [draft, setDraft] = useState('');
-  const listRef = useRef<FlatList<ChatMessage>>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const messages = messagesQuery.data ?? [];
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
 
   async function handleSend() {
     if (!draft.trim()) return;
     const text = draft;
     setDraft('');
     await sendMessage.mutateAsync(text);
-    requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   }
 
   if (!contextId) return null;
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={90}
-    >
-      <FlatList
-        ref={listRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.sm }}
-        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-        renderItem={({ item }) => (
-          <MessageBubble message={item} isMine={item.sender_id === session?.user.id} />
-        )}
-        ListEmptyComponent={
-          <Caption>No messages yet — say hi and start planning.</Caption>
-        }
-      />
-      <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center', paddingTop: spacing.sm }}>
-        <View style={{ flex: 1 }}>
+    <div className="flex min-h-[320px] flex-1 flex-col">
+      <div className="flex-1 space-y-3 overflow-y-auto py-2">
+        {messages.length === 0 ? <Caption>No messages yet — say hi and start planning.</Caption> : null}
+        {messages.map((message) => (
+          <MessageBubble key={message.id} message={message} isMine={message.sender_id === session?.user.id} />
+        ))}
+        <div ref={bottomRef} />
+      </div>
+      <form
+        className="flex items-center gap-2 pt-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSend();
+        }}
+      >
+        <div className="flex-1">
           <TextField
             value={draft}
-            onChangeText={setDraft}
+            onChange={(e) => setDraft(e.target.value)}
             placeholder="Message the group..."
-            onSubmitEditing={handleSend}
-            returnKeyType="send"
           />
-        </View>
-        <Pressable
-          onPress={handleSend}
+        </div>
+        <button
+          type="submit"
           disabled={!draft.trim()}
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.pill,
-            backgroundColor: draft.trim() ? colors.primary : colors.border,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary disabled:bg-border disabled:text-text-muted"
+          aria-label="Send"
         >
-          <Ionicons name="send" size={18} color={colors.onPrimary} />
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+          ➤
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -83,24 +73,15 @@ function MessageBubble({ message, isMine }: { message: ChatMessage; isMine: bool
   const senderName = senderQuery.data?.full_name || 'Someone';
 
   return (
-    <View style={{ alignItems: isMine ? 'flex-end' : 'flex-start' }}>
+    <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
       {!isMine ? <Caption>{senderName}</Caption> : null}
-      <View
-        style={{
-          maxWidth: '80%',
-          backgroundColor: isMine ? colors.primary : colors.surface,
-          borderWidth: isMine ? 0 : 1,
-          borderColor: colors.border,
-          borderRadius: radius.md,
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm,
-          marginTop: 2,
-        }}
+      <div
+        className={`mt-0.5 max-w-[80%] rounded-md px-4 py-2 text-[15px] ${
+          isMine ? 'bg-primary text-on-primary' : 'border border-border bg-surface text-text-primary'
+        }`}
       >
-        <Text style={{ fontSize: 15, color: isMine ? colors.onPrimary : colors.textPrimary }}>
-          {message.body}
-        </Text>
-      </View>
-    </View>
+        {message.body}
+      </div>
+    </div>
   );
 }

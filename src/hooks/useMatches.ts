@@ -19,7 +19,7 @@ export interface MatchWithParticipants {
   match_participants: MatchParticipantWithFamily[];
 }
 
-const todayIso = new Date().toISOString().slice(0, 10);
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function useMatches(groupId?: string) {
   return useQuery({
@@ -28,9 +28,11 @@ export function useMatches(groupId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('matches')
-        .select('id, group_id, date, status, match_participants(match_id, family_id, response, responded_at, family:families(id, name))')
+        .select(
+          'id, group_id, date, status, match_participants(match_id, family_id, response, responded_at, family:families(id, name))'
+        )
         .eq('group_id', groupId!)
-        .gte('date', todayIso)
+        .gte('date', todayIso())
         .order('date', { ascending: true });
       if (error) throw error;
       return data as unknown as MatchWithParticipants[];
@@ -45,7 +47,9 @@ export function useMatch(matchId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('matches')
-        .select('id, group_id, date, status, match_participants(match_id, family_id, response, responded_at, family:families(id, name))')
+        .select(
+          'id, group_id, date, status, match_participants(match_id, family_id, response, responded_at, family:families(id, name))'
+        )
         .eq('id', matchId!)
         .single();
       if (error) throw error;

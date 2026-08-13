@@ -1,6 +1,6 @@
 // Hand-written mirror of supabase/migrations/0001_init.sql.
 // If the schema changes, update this alongside the migration — there's no
-// live Supabase project wired up yet to run `supabase gen types` against.
+// live codegen wired up here.
 //
 // Shape follows @supabase/postgrest-js's GenericTable/GenericSchema
 // contract (Row/Insert/Update/Relationships per table) so the typed

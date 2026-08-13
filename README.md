@@ -7,76 +7,83 @@ group mode lets friends post when they're free to golf, auto-forms a tee-time
 session once two or more overlap, and gives them a group chat to lock in the
 course and tee time.
 
-Built with **Expo (React Native) + Expo Router** and **Supabase** (Postgres,
-Auth, Realtime).
+Built with **Next.js (App Router) + Tailwind CSS**, deployed on **Vercel**,
+backed by **Supabase** (Postgres, Auth, Realtime).
 
 ## Project structure
 
 ```
-app/                  Expo Router screens (file-based routing)
-  (auth)/              Sign in / sign up
-  (onboarding)/         Create or join a family, then a group
-  (tabs)/                Free Days feed, Calendar, Golf, Groups, Profile
-  match/[id].tsx          Match detail — host / suggest activity / chat
-  golf-session/[id].tsx    Tee-time session — RSVP / chat
-  group/[id].tsx           Group roster + invite code
+src/app/                Next.js App Router pages
+  sign-in/, sign-up/       Auth
+  onboarding/family/        Create or join a family
+  onboarding/group/          Create or join a group
+  (main)/                     Shared nav layout for the 5 core pages:
+    free-days/                 Match feed ("You're both free...")
+    calendar/                   Mark your family's free dates
+    golf/                        Golf: post availability, see tee-time sessions
+    groups/                       Manage/join groups, invite codes
+    profile/
+  match/[id]/               Match detail — host / suggest activity / chat
+  golf-session/[id]/         Tee-time session — RSVP / chat
+  group/[id]/                 Group roster + invite code
 src/
-  lib/supabase.ts       Supabase client
+  lib/supabase.ts       Supabase browser client
   providers/             Auth + react-query context providers
   hooks/                  Data-access hooks (one per feature area)
-  components/             Shared UI primitives + ChatThread
-  theme/                  Colors, spacing, typography tokens
+  components/             Shared UI primitives, MonthCalendar, ChatThread
   types/database.ts       Hand-written types mirroring the SQL schema
 supabase/migrations/0001_init.sql   Full schema, RLS policies, triggers, seed data
 ```
 
 ## Setup
 
-1. **Install dependencies** (already done if you just cloned this):
+1. **Install dependencies**:
    ```
    npm install
    ```
 
-2. **Create a Supabase project** at [supabase.com](https://supabase.com) (free tier is enough).
+2. **Supabase project**: already created — schema, RLS policies, and
+   matching/session triggers are live (see `supabase/migrations/0001_init.sql`
+   if you ever need to re-apply them to a fresh project).
 
-3. **Run the schema migration**: open the SQL editor in your Supabase
-   project and run the contents of `supabase/migrations/0001_init.sql`.
-   This creates every table, the matching/session triggers, row-level
-   security policies, and seeds the activity-suggestion list.
-
-4. **Set your environment variables**: copy `.env.example` to `.env` and
-   fill in your project's URL and anon key (Project Settings → API):
+3. **Environment variables**: copy `.env.example` to `.env` and fill in your
+   Supabase project's URL and anon key (Project Settings → API):
    ```
    cp .env.example .env
    ```
 
-5. **Run the app**:
+4. **Run locally**:
    ```
-   npx expo start
+   npm run dev
    ```
-   Scan the QR code with Expo Go (iOS/Android), or press `i` / `a` for a
-   simulator.
+   Opens at `http://localhost:3000`.
+
+## Deploying to Vercel
+
+1. Go to [vercel.com](https://vercel.com) → **Add New → Project** → import
+   this GitHub repo.
+2. Under **Environment Variables**, add `NEXT_PUBLIC_SUPABASE_URL` and
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same values as your local `.env`).
+3. Deploy. Every future push to the connected branch redeploys automatically.
 
 ## How matching works
 
-- A family marks a date free on the **Calendar** tab → this inserts a row
+- A family marks a date free on the **Calendar** page → this inserts a row
   into `family_availability`.
 - A Postgres trigger checks whether another family in the same group is
   already free that day. If so, it creates (or reuses) a `matches` row, adds
   a `match_participants` row per free family, and opens a `chats` row —
   all automatically, no polling or cron job needed.
-- The **Free Days** tab reads `matches` for your active family group. Open a
+- The **Free Days** page reads `matches` for your active family group. Open a
   match to respond (host / suggest an activity / can't make it) and chat.
 
 Golf works the same way: `golf_availability` → trigger → `golf_sessions` +
-`golf_session_participants` + a chat, surfaced on the **Golf** tab.
+`golf_session_participants` + a chat, surfaced on the **Golf** page.
 
 ## Notes
 
 - You belong to one or more **families** (your household) and one or more
   **groups** (friend circles). A group is either a `family_group` (drives
   the matching feed) or a `golf_group` (drives tee-time coordination).
-  Invite people with the invite codes shown on the Groups tab.
-- Chat is realtime via Supabase Realtime — make sure the migration's
-  `alter publication supabase_realtime add table public.chat_messages;`
-  line ran successfully (it's included in `0001_init.sql`).
+  Invite people with the invite codes shown on the Groups page.
+- Chat is realtime via Supabase Realtime.

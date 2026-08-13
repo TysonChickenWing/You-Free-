@@ -5,7 +5,7 @@ import type { GroupType } from '../types/database';
 
 // Picks which of the user's groups (of a given type) is "active" for the
 // current screen. Defaults to the first one; the user can switch via the
-// returned setter (surfaced as a picker in the Groups tab).
+// returned setter (surfaced as a picker in the Groups page).
 export function useActiveGroup(type: GroupType) {
   const query = useMyGroups(type);
   const memberships = useMemo(() => query.data ?? [], [query.data]);
